@@ -349,10 +349,10 @@ struct ContentView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "plus")
                             .foregroundColor(.secondary)
-                            .font(.system(size: 13))
+                            .font(.system(size: 14))
                         TextField("Add task", text: $quickAddText)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 14))
+                            .font(.system(size: 16))
                             .focused($quickAddFocused)
                             .onSubmit {
                                 let trimmed = quickAddText.trimmingCharacters(in: .whitespaces)
@@ -366,7 +366,7 @@ struct ContentView: View {
                             }
                     }
                     .padding(.horizontal, 10)
-                    .frame(height: 36)
+                    .frame(height: 40)
                     .frame(maxWidth: .infinity)
                     .background(Color.primary.opacity(0.06))
                     .cornerRadius(8)
@@ -375,10 +375,10 @@ struct ContentView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.secondary)
-                            .font(.system(size: 13))
+                            .font(.system(size: 14))
                         TextField("Search...", text: $searchText)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 14))
+                            .font(.system(size: 16))
                             .focused($searchFocused)
                             .onExitCommand { searchText = "" }
                             .onSubmit { searchFocused = false }
@@ -386,13 +386,13 @@ struct ContentView: View {
                             Button(action: { searchText = "" }) {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundColor(.secondary)
-                                    .font(.system(size: 13))
+                                    .font(.system(size: 14))
                             }
                             .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal, 10)
-                    .frame(height: 36)
+                    .frame(height: 40)
                     .frame(width: 180)
                     .background(Color.primary.opacity(0.06))
                     .cornerRadius(8)
@@ -1385,9 +1385,17 @@ struct AddTaskModalView: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
         VStack(alignment: .leading, spacing: 16) {
-            Text(isEditing ? "Edit task" : "New task")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.primary)
+            HStack {
+                Text(isEditing ? "Edit task" : "New task")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.primary)
+                Spacer()
+                if isEditing {
+                    Text("Added \(createdAtFormatted)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary.opacity(0.6))
+                }
+            }
 
             columnPicker
 
@@ -1480,13 +1488,6 @@ struct AddTaskModalView: View {
             }
 
             Divider()
-
-            if isEditing {
-                Text("Added \(createdAtFormatted)")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary.opacity(0.6))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
 
             HStack {
                 if isEditing, let task = existingTask {
