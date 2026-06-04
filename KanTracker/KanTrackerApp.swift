@@ -139,6 +139,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Reset all data...", action: #selector(resetAllData), keyEquivalent: ""))
         menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "Check for Updates...", action: #selector(checkForUpdates), keyEquivalent: ""))
+        menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit KanTracker", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
 
         statusItem?.menu = menu
@@ -275,6 +277,47 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         fields.append(current)
         return fields
+    }
+
+    @objc func checkForUpdates() {
+        let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        var request = URLRequest(url: URL(string: "https://api.github.com/repos/trmp10/kantracker/releases/latest")!)
+        request.setValue("KanTracker/\(current)", forHTTPHeaderField: "User-Agent")
+        URLSession.shared.dataTask(with: request) { data, _, _ in
+            guard let data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let tag = json["tag_name"] as? String
+            else {
+                DispatchQueue.main.async { self.showUpdateAlert(current: current, latest: nil) }
+                return
+            }
+            let latest = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
+            DispatchQueue.main.async { self.showUpdateAlert(current: current, latest: latest) }
+        }.resume()
+    }
+
+    private func showUpdateAlert(current: String, latest: String?) {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        if let latest, latest != current {
+            alert.messageText = "Update available: v\(latest)"
+            alert.informativeText = "You're on v\(current). Download the latest version from GitHub."
+            alert.addButton(withTitle: "Download")
+            alert.addButton(withTitle: "Later")
+            if alert.runModal() == .alertFirstButtonReturn {
+                NSWorkspace.shared.open(URL(string: "https://github.com/trmp10/kantracker/releases/latest")!)
+            }
+        } else if latest == current {
+            alert.messageText = "You're up to date"
+            alert.informativeText = "KanTracker v\(current) is the latest version."
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        } else {
+            alert.messageText = "Couldn't check for updates"
+            alert.informativeText = "Please check your internet connection and try again."
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        }
     }
 
     func savePanelFrame() {
