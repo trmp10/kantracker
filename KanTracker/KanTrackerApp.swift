@@ -6,7 +6,6 @@ import ApplicationServices
 
 
 extension Notification.Name {
-    static let focusQuickAdd = Notification.Name("kanTrackerFocusQuickAdd")
     static let toggleNewTask = Notification.Name("kanTrackerToggleNewTask")
     static let exportCSV     = Notification.Name("kanTrackerExportCSV")
 }

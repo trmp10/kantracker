@@ -186,6 +186,7 @@ struct Task: Identifiable, Codable {
     var subtasks: [Subtask] = []
     var completedAt: Date? = nil
     var archived: Bool = false
+    var createdAt: Date = Date()
 }
 
 // MARK: - Store
@@ -446,11 +447,6 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
             guard !showingModal else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { quickAddFocused = true }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .focusQuickAdd)) { _ in
-            addTaskColumn = nil
-            editingTask = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { quickAddFocused = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .toggleNewTask)) { _ in
             if addTaskColumn != nil || editingTask != nil {
@@ -1362,6 +1358,13 @@ struct AddTaskModalView: View {
 
     private var isEditing: Bool { existingTask != nil }
 
+    private var createdAtFormatted: String {
+        guard let date = existingTask?.createdAt else { return "" }
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        return f.string(from: date)
+    }
+
     init(column: Column, store: KanbanStore, existingTask: Task? = nil, onSave: @escaping (Task) -> Void, onDismiss: @escaping () -> Void) {
         self.existingTask = existingTask
         self._selectedColumn = State(initialValue: existingTask?.column ?? column)
@@ -1477,6 +1480,13 @@ struct AddTaskModalView: View {
             }
 
             Divider()
+
+            if isEditing {
+                Text("Added \(createdAtFormatted)")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary.opacity(0.6))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             HStack {
                 if isEditing, let task = existingTask {
