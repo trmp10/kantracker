@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		78A901AD2FD1C39100E1B520 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 78A901AC2FD1C39100E1B520 /* Sparkle */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		78AC2DE92FD13FD100583507 /* KanTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KanTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				78A901AD2FD1C39100E1B520 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = KanTracker;
 			packageProductDependencies = (
+				78A901AC2FD1C39100E1B520 /* Sparkle */,
 			);
 			productName = KanTracker;
 			productReference = 78AC2DE92FD13FD100583507 /* KanTracker.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 78AC2DE02FD13FD100583507;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				78A901AB2FD1C39100E1B520 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 78AC2DEA2FD13FD100583507 /* Products */;
 			projectDirPath = "";
@@ -253,10 +262,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				INFOPLIST_KEY_SUFeedURL = "https://trmp10.github.io/kantracker/appcast.xml";
-				INFOPLIST_KEY_SUPublicEDKey = "o1W++doNv7juFbeQ3y5SJ8uo0rfDtWCnga57qB6Czpc=";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_SUFeedURL = "https://trmp10.github.io/kantracker/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "o1W++doNv7juFbeQ3y5SJ8uo0rfDtWCnga57qB6Czpc=";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -284,10 +293,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				INFOPLIST_KEY_SUFeedURL = "https://trmp10.github.io/kantracker/appcast.xml";
-				INFOPLIST_KEY_SUPublicEDKey = "o1W++doNv7juFbeQ3y5SJ8uo0rfDtWCnga57qB6Czpc=";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_SUFeedURL = "https://trmp10.github.io/kantracker/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "o1W++doNv7juFbeQ3y5SJ8uo0rfDtWCnga57qB6Czpc=";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -327,6 +336,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		78A901AB2FD1C39100E1B520 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		78A901AC2FD1C39100E1B520 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 78A901AB2FD1C39100E1B520 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 78AC2DE12FD13FD100583507 /* Project object */;
 }
