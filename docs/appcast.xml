@@ -25,5 +25,16 @@
         length="471683"
         type="application/octet-stream"/>
     </item>
+    <item>
+      <title>KanTracker 1.2</title>
+      <sparkle:version>2</sparkle:version>
+      <sparkle:shortVersionString>1.2</sparkle:shortVersionString>
+      <pubDate>Fri, 05 Jun 2026 03:23:39 +0000</pubDate>
+      <enclosure
+        url="https://github.com/trmp10/kantracker/releases/download/v1.2/KanTracker.zip"
+        sparkle:edSignature="wlH3jqo8ODv0HLxsJqySaIh5oRndmlZqWb4Z2HspODvGyyTHByDOFn4rAuhZtetCH+WMiUvjE/xsyDR4QhxmAg=="
+        length="3325003"
+        type="application/octet-stream"/>
+    </item>
   </channel>
 </rss>
