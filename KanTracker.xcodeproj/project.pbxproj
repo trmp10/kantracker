@@ -262,10 +262,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_SUFeedURL = "https://trmp10.github.io/kantracker/appcast.xml";
-				INFOPLIST_KEY_SUPublicEDKey = "o1W++doNv7juFbeQ3y5SJ8uo0rfDtWCnga57qB6Czpc=";
+				INFOPLIST_FILE = KanTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -293,10 +292,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_SUFeedURL = "https://trmp10.github.io/kantracker/appcast.xml";
-				INFOPLIST_KEY_SUPublicEDKey = "o1W++doNv7juFbeQ3y5SJ8uo0rfDtWCnga57qB6Czpc=";
+				INFOPLIST_FILE = KanTracker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
