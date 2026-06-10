@@ -166,7 +166,7 @@ enum Column: String, Codable, CaseIterable {
 
 // MARK: - Subtask
 
-struct Subtask: Identifiable, Codable {
+struct Subtask: Identifiable, Codable, Equatable {
     var id = UUID()
     var title: String
     var completed: Bool = false
@@ -264,8 +264,6 @@ class KanbanStore: ObservableObject {
             tasks[i].completedAt = nil
         }
     }
-
-
 
     func addProject(_ project: Project) { projects.append(project) }
     func deleteProject(_ project: Project) { projects.removeAll { $0.id == project.id } }
@@ -431,15 +429,9 @@ struct ContentView: View {
                     .onTapGesture { dismissModal() }
 
                 if let col = addTaskColumn {
-                    AddTaskModalView(column: col, store: store, onSave: { task in
-                        store.addTask(task)
-                        dismissModal()
-                    }, onDismiss: { dismissModal() })
+                    AddTaskModalView(column: col, store: store, onDismiss: { dismissModal() })
                 } else if let task = editingTask {
-                    AddTaskModalView(column: task.column, store: store, existingTask: task, onSave: { updated in
-                        store.updateTask(updated)
-                        dismissModal()
-                    }, onDismiss: { dismissModal() })
+                    AddTaskModalView(column: task.column, store: store, existingTask: task, onDismiss: { dismissModal() })
                 }
             }
         }
@@ -537,10 +529,8 @@ struct ClearFiltersButton: View {
         }
         .buttonStyle(.plain)
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-        }
+        .onHover { isHovered = $0 }
+        .pointerCursor()
     }
 }
 
@@ -559,10 +549,8 @@ struct FilterPriorityPill: View {
             .background(isActive ? priority.color : (isHovered ? Color.primary.opacity(0.08) : Color.primary.opacity(0.05)))
             .cornerRadius(6)
             .contentShape(Rectangle())
-            .onHover { hovering in
-                isHovered = hovering
-                if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-            }
+            .onHover { isHovered = $0 }
+            .pointerCursor()
             .onTapGesture { onTap() }
     }
 }
@@ -600,10 +588,8 @@ struct ProjectFilterDropdown: View {
         }
         .buttonStyle(.plain)
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-        }
+        .onHover { isHovered = $0 }
+        .pointerCursor()
         .popover(isPresented: $showPopover, arrowEdge: .bottom) {
             VStack(alignment: .leading, spacing: 2) {
                 ForEach(projects) { project in
@@ -649,10 +635,8 @@ struct ProjectFilterRow: View {
         .background(isHovered ? Color.primary.opacity(0.06) : Color.clear)
         .cornerRadius(6)
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-        }
+        .onHover { isHovered = $0 }
+        .pointerCursor()
         .onTapGesture { onTap() }
     }
 }
@@ -704,7 +688,7 @@ struct ColumnView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         ForEach(tasks) { task in
                             TaskCardView(task: task, store: store, onEdit: { onEditTask(task) })
                         }
@@ -763,10 +747,8 @@ struct ColumnView: View {
             .cornerRadius(6)
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            addTaskHovered = hovering
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-        }
+        .onHover { addTaskHovered = $0 }
+        .pointerCursor()
     }
 }
 
@@ -777,6 +759,7 @@ struct TaskCardView: View {
     @ObservedObject var store: KanbanStore
     let onEdit: () -> Void
     @State private var isHovered = false
+    @Environment(\.colorScheme) var colorScheme
 
     private var dueDateInfo: (text: String, color: Color)? {
         guard let date = task.dueDate else { return nil }
@@ -790,92 +773,86 @@ struct TaskCardView: View {
         case ..<(-1): return ("\(abs(days))d overdue", .red)
         case -1:      return ("1d overdue", .red)
         case 0:       return ("Today", .orange)
-        case 1:       return ("Tomorrow", Color(hex: "#FFD166") ?? .yellow)
+        case 1:       return ("Tomorrow", colorScheme == .dark ? (Color(hex: "#FFD166") ?? .yellow) : (Color(hex: "#B07D00") ?? .orange))
         default:
             let f = DateFormatter(); f.dateFormat = "MMM d"
             return (f.string(from: date), .secondary)
         }
     }
 
+    private var subtaskProgressBar: some View {
+        let total = task.subtasks.count
+        let done = task.subtasks.filter(\.completed).count
+        let fraction = total > 0 ? CGFloat(done) / CGFloat(total) : 0
+        return GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Rectangle().fill(Color.primary.opacity(0.08))
+                Rectangle()
+                    .fill(Color.accentColor)
+                    .frame(width: geo.size.width * fraction)
+                    .animation(.easeInOut(duration: 0.25), value: fraction)
+            }
+        }
+        .frame(height: 5)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .center) {
-                Circle()
-                    .fill(task.priority.color)
-                    .frame(width: 12, height: 12)
-                    .onTapGesture { store.cyclePriority(task) }
-                    .pointerCursor()
-                Spacer()
-                if let info = dueDateInfo {
-                    Text(info.text)
-                        .font(.system(size: 14))
-                        .foregroundColor(info.color)
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .center) {
+                    Circle()
+                        .fill(task.priority.color)
+                        .frame(width: 12, height: 12)
+                        .onTapGesture { store.cyclePriority(task) }
+                        .pointerCursor()
+                    Spacer()
+                    if let info = dueDateInfo {
+                        Text(info.text)
+                            .font(.system(size: 14))
+                            .foregroundColor(info.color)
+                    }
                 }
-            }
 
-            Text(task.title.isEmpty ? "New task" : task.title)
-                .font(.system(size: 16))
-                .foregroundColor(task.title.isEmpty ? .secondary : .primary)
-                .strikethrough(task.column == .done, color: .secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                Text(task.title.isEmpty ? "New task" : task.title)
+                    .font(.system(size: 16))
+                    .foregroundColor(task.title.isEmpty ? .secondary : .primary)
+                    .strikethrough(task.column == .done, color: .secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: 6) {
-                if !task.project.isEmpty {
-                    Text(task.project)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color.isLightHex(task.projectColorHex) ? .black.opacity(0.7) : .white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color(hex: task.projectColorHex) ?? Color.accentColor)
-                        .cornerRadius(3)
-                }
-                if !task.notes.isEmpty {
-                    Image(systemName: "note.text")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-                if !task.subtasks.isEmpty {
-                    let done = task.subtasks.filter(\.completed).count
-                    Text("\(done)/\(task.subtasks.count)")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(Color.primary.opacity(0.06))
-                        .cornerRadius(3)
-                }
-            }
-
-            if !task.subtasks.isEmpty {
-                VStack(spacing: 4) {
-                    ForEach(task.subtasks) { subtask in
-                        HStack(spacing: 6) {
-                            Image(systemName: subtask.completed ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 13))
-                                .foregroundColor(subtask.completed ? .accentColor : .secondary)
-                                .onTapGesture { store.toggleSubtask(subtask.id, in: task) }
-                                .pointerCursor()
-                            Text(subtask.title)
-                                .font(.system(size: 13))
-                                .foregroundColor(subtask.completed ? .secondary : .primary)
-                                .strikethrough(subtask.completed, color: .secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                if !task.project.isEmpty || !task.notes.isEmpty {
+                    HStack(spacing: 6) {
+                        if !task.project.isEmpty {
+                            Text(task.project)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(Color.isLightHex(task.projectColorHex) ? .black.opacity(0.7) : .white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color(hex: task.projectColorHex) ?? Color.accentColor)
+                                .cornerRadius(3)
+                        }
+                        if !task.notes.isEmpty {
+                            Image(systemName: "note.text")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
                         }
                     }
                 }
-                .padding(.top, 2)
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 12)
+            .padding(.bottom, task.subtasks.isEmpty ? 12 : 10)
+
+            if !task.subtasks.isEmpty {
+                subtaskProgressBar
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 12)
         .background(isHovered ? Color(NSColor.controlBackgroundColor).opacity(0.8) : Color(NSColor.controlBackgroundColor))
         .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.primary.opacity(0.2), lineWidth: 1))
         .cornerRadius(6)
+        .clipped()
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-        }
+        .onHover { isHovered = $0 }
+        .pointerCursor()
         .onTapGesture { onEdit() }
         .onDrag({
             NSItemProvider(item: task.id.uuidString.data(using: .utf8)! as NSData, typeIdentifier: UTType.plainText.identifier)
@@ -912,7 +889,7 @@ struct ProjectPill: View {
     var body: some View {
         HStack(spacing: 5) {
             Text(project.name)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundColor(isSelected ? (Color.isLightHex(project.colorHex) ? .black.opacity(0.7) : .white) : .secondary)
             if isHovered {
                 Button(action: { showingDeleteConfirm = true }) {
@@ -923,15 +900,13 @@ struct ProjectPill: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 10)
-        .frame(minHeight: 28)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
         .background(isSelected ? project.color : (isHovered ? Color.primary.opacity(0.10) : Color.primary.opacity(0.06)))
         .cornerRadius(6)
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-        }
+        .onHover { isHovered = $0 }
+        .pointerCursor()
         .simultaneousGesture(TapGesture().onEnded { onTap() })
         .alert("Delete \"\(project.name)\"?", isPresented: $showingDeleteConfirm) {
             Button("Delete", role: .destructive) { onDelete() }
@@ -961,12 +936,12 @@ struct ProjectPickerView: View {
                 if !showingNew {
                     Button(action: { showingNew = true }) {
                         HStack(spacing: 4) {
-                            Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
-                            Text("New project").font(.system(size: 13))
+                            Image(systemName: "plus").font(.system(size: 9, weight: .semibold))
+                            Text("New project").font(.system(size: 11))
                         }
                         .foregroundColor(.secondary)
-                        .padding(.horizontal, 10)
-                        .frame(minHeight: 28)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                         .background(Color.primary.opacity(0.04))
                         .cornerRadius(6)
                     }
@@ -1059,6 +1034,7 @@ struct CustomDatePicker: View {
     @Binding var date: Date?
     @State private var isExpanded = false
     @State private var displayedMonth: Date
+    @FocusState private var isFocused: Bool
 
     private let cal = Calendar.current
     private let dayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
@@ -1095,7 +1071,7 @@ struct CustomDatePicker: View {
                     } else {
                         Text("Add due date")
                             .font(.system(size: 14))
-                            .foregroundColor(.secondary.opacity(0.4))
+                            .foregroundColor(Color(NSColor.placeholderTextColor))
                     }
                     Spacer()
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
@@ -1109,6 +1085,10 @@ struct CustomDatePicker: View {
             }
             .buttonStyle(.plain)
             .pointerCursor()
+            .focused($isFocused)
+            .focusable()
+            .onKeyPress(.space) { isExpanded.toggle(); return .handled }
+            .onKeyPress(.return) { isExpanded.toggle(); return .handled }
 
             if date != nil {
                 Button(action: { date = nil; isExpanded = false }) {
@@ -1216,20 +1196,17 @@ struct DayCell: View {
         ZStack {
             if isSelected {
                 Circle().fill(Color.accentColor).frame(width: 24, height: 24)
+            } else if isToday && isCurrentMonth {
+                Circle().fill(Color.accentColor).frame(width: 24, height: 24)
             } else if isHovered && isCurrentMonth {
                 Circle().fill(Color.primary.opacity(0.08)).frame(width: 24, height: 24)
             }
-            VStack(spacing: 2) {
-                Text("\(cal.component(.day, from: day))")
-                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(
-                        isSelected ? .white :
-                        !isCurrentMonth ? Color.primary.opacity(0.25) : .primary
-                    )
-                if isToday && !isSelected {
-                    Circle().fill(Color.accentColor).frame(width: 3, height: 3)
-                }
-            }
+            Text("\(cal.component(.day, from: day))")
+                .font(.system(size: 13, weight: isSelected || isToday ? .semibold : .regular))
+                .foregroundColor(
+                    isSelected || (isToday && isCurrentMonth) ? .white :
+                    !isCurrentMonth ? Color.primary.opacity(0.25) : .primary
+                )
         }
         .frame(maxWidth: .infinity, minHeight: 26)
         .contentShape(Rectangle())
@@ -1251,17 +1228,15 @@ struct ColumnPickerPill: View {
             Text(col.rawValue)
                 .font(.system(size: 14))
                 .foregroundColor(isSelected ? col.pickerTextColor : (isHovered ? .primary : .secondary))
-                .padding(.horizontal, 16)
-                .frame(minHeight: 36)
+                .padding(.horizontal, 12)
+                .frame(minHeight: 32)
                 .background(isSelected ? col.pickerColor : (isHovered ? Color.primary.opacity(0.08) : Color.primary.opacity(0.04)))
                 .cornerRadius(8)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-        }
+        .onHover { isHovered = $0 }
+        .pointerCursor()
     }
 }
 
@@ -1285,10 +1260,8 @@ struct ModalPriorityPill: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-        }
+        .onHover { isHovered = $0 }
+        .pointerCursor()
     }
 }
 
@@ -1298,47 +1271,79 @@ struct SubtaskRow: View {
     let subtask: Subtask
     let onToggle: () -> Void
     let onDelete: () -> Void
+    let onRename: (String) -> Void
     @State private var isHovered = false
+    @State private var isEditing = false
+    @State private var editText = ""
+    @FocusState private var fieldFocused: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .center, spacing: 8) {
             Image(systemName: subtask.completed ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 14))
                 .foregroundColor(subtask.completed ? .accentColor : .secondary)
-            Text(subtask.title)
-                .font(.system(size: 14))
-                .foregroundColor(subtask.completed ? .secondary : .primary)
-                .strikethrough(subtask.completed, color: .secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            if isHovered {
-                Button(action: onDelete) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .pointerCursor()
+                .onTapGesture { onToggle() }
+
+            if isEditing {
+                TextField("", text: $editText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 14))
+                    .focused($fieldFocused)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .onSubmit { commitEdit() }
+                    .onExitCommand { cancelEdit() }
+                    .onAppear { fieldFocused = true }
+                    .onDisappear { commitEdit() }
+            } else {
+                Text(subtask.title)
+                    .font(.system(size: 14))
+                    .foregroundColor(subtask.completed ? .secondary : .primary)
+                    .strikethrough(subtask.completed, color: .secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .onTapGesture { startEdit() }
             }
+
+            Button(action: onDelete) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+            .opacity(isHovered ? 1 : 0)
         }
         .padding(.horizontal, 8)
-        .frame(minHeight: 36)
+        .padding(.vertical, 5)
         .background(isHovered ? Color.primary.opacity(0.04) : Color.clear)
         .cornerRadius(6)
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
+        .onHover { isHovered = $0 }
+        .onTapGesture { if !isEditing { onToggle() } }
+    }
+
+    private func startEdit() {
+        editText = subtask.title
+        isEditing = true
+    }
+
+    private func commitEdit() {
+        let trimmed = editText.trimmingCharacters(in: .whitespaces)
+        isEditing = false
+        if !trimmed.isEmpty && trimmed != subtask.title {
+            onRename(trimmed)
         }
-        .simultaneousGesture(TapGesture().onEnded { onToggle() })
+    }
+
+    private func cancelEdit() {
+        isEditing = false
     }
 }
 
 // MARK: - Add Task Modal
 
 struct AddTaskModalView: View {
-    let onSave: (Task) -> Void
     let onDismiss: () -> Void
     let existingTask: Task?
 
@@ -1365,7 +1370,7 @@ struct AddTaskModalView: View {
         return f.string(from: date)
     }
 
-    init(column: Column, store: KanbanStore, existingTask: Task? = nil, onSave: @escaping (Task) -> Void, onDismiss: @escaping () -> Void) {
+    init(column: Column, store: KanbanStore, existingTask: Task? = nil, onDismiss: @escaping () -> Void) {
         self.existingTask = existingTask
         self._selectedColumn = State(initialValue: existingTask?.column ?? column)
         self._title = State(initialValue: existingTask?.title ?? "")
@@ -1378,7 +1383,6 @@ struct AddTaskModalView: View {
         }
         self._selectedProject = State(initialValue: project)
         self.store = store
-        self.onSave = onSave
         self.onDismiss = onDismiss
     }
 
@@ -1393,7 +1397,7 @@ struct AddTaskModalView: View {
                 if isEditing {
                     Text("Added \(createdAtFormatted)")
                         .font(.system(size: 12))
-                        .foregroundColor(.secondary.opacity(0.6))
+                        .foregroundColor(Color(NSColor.secondaryLabelColor))
                 }
             }
 
@@ -1403,7 +1407,7 @@ struct AddTaskModalView: View {
                 if title.isEmpty {
                     Text("Task")
                         .font(.system(size: 14))
-                        .foregroundColor(.secondary.opacity(0.4))
+                        .foregroundColor(Color(NSColor.placeholderTextColor))
                         .padding(.horizontal, 10)
                         .allowsHitTesting(false)
                 }
@@ -1415,7 +1419,7 @@ struct AddTaskModalView: View {
                     .padding(.horizontal, 10)
                     .focused($titleFocused)
                     .onAppear { titleFocused = true }
-                    .onSubmit { if !title.isEmpty { save() } }
+                    .onSubmit { if !title.isEmpty && !isEditing { save() } }
             }
             .background(Color.primary.opacity(0.06))
             .cornerRadius(8)
@@ -1431,7 +1435,7 @@ struct AddTaskModalView: View {
                 if notes.isEmpty {
                     Text("Add notes...")
                         .font(.system(size: 14))
-                        .foregroundColor(.secondary.opacity(0.4))
+                        .foregroundColor(Color(NSColor.placeholderTextColor))
                         .padding(.horizontal, 10)
                         .padding(.top, 10)
                         .allowsHitTesting(false)
@@ -1455,19 +1459,23 @@ struct AddTaskModalView: View {
                                 guard let i = subtasks.firstIndex(where: { $0.id == subtask.id }) else { return }
                                 subtasks[i].completed.toggle()
                             },
-                            onDelete: { subtasks.removeAll { $0.id == subtask.id } }
+                            onDelete: { subtasks.removeAll { $0.id == subtask.id } },
+                            onRename: { newTitle in
+                                guard let i = subtasks.firstIndex(where: { $0.id == subtask.id }) else { return }
+                                subtasks[i].title = newTitle
+                            }
                         )
                     }
                 }
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
                         .font(.system(size: 12))
-                        .foregroundColor(.secondary.opacity(0.4))
+                        .foregroundColor(Color(NSColor.placeholderTextColor))
                     ZStack(alignment: .leading) {
                         if newSubtaskTitle.isEmpty {
                             Text("Add subtask...")
                                 .font(.system(size: 14))
-                                .foregroundColor(.secondary.opacity(0.4))
+                                .foregroundColor(Color(NSColor.placeholderTextColor))
                                 .allowsHitTesting(false)
                         }
                         TextField("", text: $newSubtaskTitle)
@@ -1502,10 +1510,8 @@ struct AddTaskModalView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .onHover { hovering in
-                        deleteHovered = hovering
-                        if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-                    }
+                    .onHover { deleteHovered = $0 }
+                    .pointerCursor()
                     .alert("Delete \"\(task.title)\"?", isPresented: $showingDeleteConfirm) {
                         Button("Delete", role: .destructive) { store.delete(task); onDismiss() }
                         Button("Cancel", role: .cancel) {}
@@ -1515,7 +1521,7 @@ struct AddTaskModalView: View {
                 }
                 Spacer()
                 Button(action: { onDismiss() }) {
-                    Text("Cancel")
+                    Text(isEditing ? "Close" : "Cancel")
                         .font(.system(size: 14))
                         .foregroundColor(Color(NSColor.secondaryLabelColor))
                         .padding(.horizontal, 16)
@@ -1525,23 +1531,23 @@ struct AddTaskModalView: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .onHover { hovering in
-                    cancelHovered = hovering
-                    if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
-                }
+                .onHover { cancelHovered = $0 }
+                .pointerCursor()
 
-                Button(isEditing ? "Save" : "Add task") { save() }
-                    .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.plain)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(title.isEmpty ? .secondary : .white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(title.isEmpty ? Color.primary.opacity(0.08) : Color.accentColor)
-                    .cornerRadius(8)
-                    .contentShape(Rectangle())
-                    .disabled(title.isEmpty)
-                    .pointerCursor()
+                if !isEditing {
+                    Button("Add task") { save() }
+                        .keyboardShortcut(.defaultAction)
+                        .buttonStyle(.plain)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(title.isEmpty ? .secondary : .white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(title.isEmpty ? Color.primary.opacity(0.08) : Color.accentColor)
+                        .cornerRadius(8)
+                        .contentShape(Rectangle())
+                        .disabled(title.isEmpty)
+                        .pointerCursor()
+                }
             }
         }
         .padding(24)
@@ -1550,6 +1556,13 @@ struct AddTaskModalView: View {
         .fixedSize(horizontal: false, vertical: true)
         .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(12)
+        .onChange(of: title)               { liveUpdate() }
+        .onChange(of: notes)               { liveUpdate() }
+        .onChange(of: priority)            { liveUpdate() }
+        .onChange(of: selectedColumn)      { liveUpdate() }
+        .onChange(of: selectedProject?.id) { liveUpdate() }
+        .onChange(of: dueDate)             { liveUpdate() }
+        .onChange(of: subtasks)            { liveUpdate() }
     }
 
     private var priorityPills: some View {
@@ -1572,7 +1585,7 @@ struct AddTaskModalView: View {
         }
     }
 
-    private func save() {
+    private func buildTask() -> Task {
         var task = existingTask ?? Task(title: title, priority: priority, column: selectedColumn)
         task.title = title
         task.priority = priority
@@ -1582,7 +1595,16 @@ struct AddTaskModalView: View {
         task.dueDate = dueDate
         task.notes = notes
         task.subtasks = subtasks
-        onSave(task)
+        return task
+    }
+
+    private func liveUpdate() {
+        guard isEditing else { return }
+        store.updateTask(buildTask())
+    }
+
+    private func save() {
+        store.addTask(buildTask())
         onDismiss()
     }
 }
