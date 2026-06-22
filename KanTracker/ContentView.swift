@@ -138,7 +138,7 @@ enum Column: String, Codable, CaseIterable {
 
     var label: String {
         switch self {
-        case .onHold:  return "On hold"
+        case .onHold:  return "ON HOLD"
         case .todo:    return "TO DO"
         case .waiting: return "WAITING"
         case .wip:     return "IN PROGRESS"
