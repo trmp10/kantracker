@@ -104,7 +104,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self?.togglePanel()
                 return nil
             }
-            if event.keyCode == 45, flags == [.command] {
+            if event.keyCode == 45, flags == [.control] {
                 DispatchQueue.main.async {
                     NotificationCenter.default.post(name: .toggleNewTask, object: nil)
                 }
@@ -112,6 +112,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             return event
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        if let m = globalClickMonitor { NSEvent.removeMonitor(m) }
+        if let m = globalKeyMonitor   { NSEvent.removeMonitor(m) }
+        if let m = localKeyMonitor    { NSEvent.removeMonitor(m) }
     }
 
     @objc func handleStatusItemClick() {

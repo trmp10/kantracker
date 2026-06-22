@@ -130,6 +130,7 @@ enum Priority: String, Codable, CaseIterable {
 // MARK: - Column
 
 enum Column: String, Codable, CaseIterable {
+    case onHold  = "On hold"
     case todo    = "To do"
     case wip     = "In progress"
     case waiting = "Waiting"
@@ -137,6 +138,7 @@ enum Column: String, Codable, CaseIterable {
 
     var label: String {
         switch self {
+        case .onHold:  return "On hold"
         case .todo:    return "TO DO"
         case .waiting: return "WAITING"
         case .wip:     return "IN PROGRESS"
@@ -146,6 +148,7 @@ enum Column: String, Codable, CaseIterable {
 
     var pickerColor: Color {
         switch self {
+        case .onHold:  return Color(hex: "#F59E0B") ?? .orange
         case .todo:    return Color.primary.opacity(0.45)
         case .waiting: return Color(hex: "#118AB2") ?? .blue
         case .wip:     return Color.yellow
@@ -155,6 +158,7 @@ enum Column: String, Codable, CaseIterable {
 
     var pickerTextColor: Color {
         switch self {
+        case .onHold:  return .black.opacity(0.7)
         case .todo:    return .white
         case .waiting: return .white
         case .wip:     return .black.opacity(0.7)
@@ -664,6 +668,13 @@ struct ColumnView: View {
         }
         if !projectFilters.isEmpty {
             all = all.filter { projectFilters.contains($0.project) }
+        }
+        if column == .done {
+            return all.sorted { a, b in
+                let dateA = a.completedAt ?? a.createdAt
+                let dateB = b.completedAt ?? b.createdAt
+                return dateA > dateB
+            }
         }
         return all.sorted { a, b in
             switch (a.dueDate, b.dueDate) {

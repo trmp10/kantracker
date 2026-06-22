@@ -13,7 +13,7 @@ SPARKLE_SIGN="/opt/homebrew/Caskroom/sparkle/2.9.2/bin/sign_update"
 TAP_DIR="$HOME/Documents/Cursor/homebrew-kantracker"
 REPO="trmp10/kantracker"
 ARCHIVE_PATH="/tmp/KanTracker_${VERSION}.xcarchive"
-APP_PATH="/tmp/KanTracker_release.app"
+APP_PATH="/tmp/KanTracker.app"
 ZIP_PATH="/tmp/KanTracker.zip"
 
 # Guard: private key must exist
@@ -36,7 +36,7 @@ xcodebuild -scheme KanTracker -configuration Release -archivePath "$ARCHIVE_PATH
 echo "→ Zipping..."
 rm -rf "$APP_PATH" "$ZIP_PATH"
 cp -R "$ARCHIVE_PATH/Products/Applications/KanTracker.app" "$APP_PATH"
-cd /tmp && zip -r "$ZIP_PATH" "KanTracker_release.app" > /dev/null
+cd /tmp && zip -r "$ZIP_PATH" "KanTracker.app" > /dev/null
 rm -rf "$APP_PATH"
 
 SIZE=$(wc -c < "$ZIP_PATH" | tr -d ' ')
