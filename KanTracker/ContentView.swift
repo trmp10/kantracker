@@ -1587,7 +1587,7 @@ struct AddTaskModalView: View {
 
     private var columnPicker: some View {
         HStack(spacing: 8) {
-            ForEach(Column.allCases, id: \.self) { col in
+            ForEach(Column.allCases.filter { $0 != .onHold }, id: \.self) { col in
                 ColumnPickerPill(col: col, isSelected: selectedColumn == col) {
                     selectedColumn = col
                 }
