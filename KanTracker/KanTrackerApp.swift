@@ -97,7 +97,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             DispatchQueue.main.async { self?.togglePanel() }
         }
 
-        // Ctrl+Shift+K / Cmd+N — fires when app is focused
+        // Ctrl+Shift+K / Cmd+Z / Cmd+Shift+Z — fires when app is focused
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             let flags = event.modifierFlags.intersection([.control, .shift, .command, .option])
             if event.keyCode == 40, flags == [.control, .shift] {
@@ -109,6 +109,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     NotificationCenter.default.post(name: .toggleNewTask, object: nil)
                 }
                 return nil
+            }
+            // Cmd+Z / Cmd+Shift+Z: only intercept when a text field is not focused
+            if event.keyCode == 6, !(NSApp.keyWindow?.firstResponder is NSTextView) {
+                if flags == [.command] {
+                    self?.store.undo()
+                    return nil
+                }
+                if flags == [.command, .shift] {
+                    self?.store.redo()
+                    return nil
+                }
             }
             return event
         }

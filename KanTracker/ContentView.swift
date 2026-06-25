@@ -210,6 +210,7 @@ class KanbanStore: ObservableObject {
     }
 
     private var undoHistory: [[Task]] = []
+    private var redoHistory: [[Task]] = []
 
     func tasks(in column: Column) -> [Task] { tasks.filter { $0.column == column && !$0.archived } }
 
@@ -231,11 +232,19 @@ class KanbanStore: ObservableObject {
 
     func undo() {
         guard let previous = undoHistory.popLast() else { return }
+        redoHistory.append(tasks)
         tasks = previous
+    }
+
+    func redo() {
+        guard let next = redoHistory.popLast() else { return }
+        undoHistory.append(tasks)
+        tasks = next
     }
 
     private func saveForUndo() {
         undoHistory.append(tasks)
+        redoHistory.removeAll()
         if undoHistory.count > 20 { undoHistory.removeFirst() }
     }
 
@@ -453,12 +462,6 @@ struct ContentView: View {
                 addTaskColumn = .todo
             }
         }
-        // Cmd+Z: undo
-        .background(
-            Button("") { store.undo() }
-                .keyboardShortcut("z", modifiers: .command)
-                .opacity(0)
-        )
         .onExitCommand {
             if showingModal {
                 dismissModal()
